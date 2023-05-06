@@ -1,14 +1,14 @@
-C = g++
+CC = g++
 CFLAGS = -Wall
 
 TIMERS_SRCS = timer.cpp example_timer.cpp
 
 all: timer
 
-timer: $(TIMERS_SRCS:.c=.o)
+timer: $(TIMERS_SRCS:.cpp=.o)
 	$(CC) -o test_timer example_timer.o timer.o
 
-%.o: %.c
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
