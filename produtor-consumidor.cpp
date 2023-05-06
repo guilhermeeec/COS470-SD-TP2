@@ -2,12 +2,12 @@
 
 #include <thread>
 #include <cstdlib>
-#include <csignal>
 #include <iostream>
 #include <unistd.h>
 #include <cmath>
 #include <semaphore.h>
 #include <queue>
+#include <vector>
 //#include "utils.h" // Trabalho anterior
 
 // -------------- Macros --------------
@@ -61,82 +61,76 @@ uint32_t retirar_do_buffer()
     uint32_t produto = buffer.front();
     buffer.pop();
     numero_produtos_consumidos++;
+    return produto;
 }
 
 void tarefa_produtor() 
 {
-    uint32_t produto = produz_inteiro();
-    sem_wait(&empty);
-    sem_wait(&mutex);
-    colocar_no_buffer(produto);
-    sem_post(&mutex);
-    sem_post(&full);
+    while(1) {        
+        uint32_t produto = produz_inteiro();
+        sem_wait(&empty);
+        sem_wait(&mutex);
+        if(numero_produtos_consumidos == numero_max_produtos_consumidos) {
+            sem_post(&mutex);
+            sem_post(&full);
+            std::terminate();
+        }
+        colocar_no_buffer(produto);
+        sem_post(&mutex);
+        sem_post(&full);
+    }
 }
 
 void tarefa_consumidor() 
 {
-    sem_wait(&full);
-    sem_wait(&mutex);
-    uint32_t produto = retirar_do_buffer();
-    sem_post(&mutex);
-    sem_post(&empty);
-    checar_primo(produto);
-    
-    if(numero_produtos_consumidos == numero_max_produtos_consumidos)
-        raise(SIGUSR1);
+    while(1) {
+        sem_wait(&full);
+        sem_wait(&mutex);
+        if(numero_produtos_consumidos == numero_max_produtos_consumidos) {
+            sem_post(&mutex);
+            sem_post(&empty);
+            std::terminate();
+        }
+        uint32_t produto = retirar_do_buffer();
+        sem_post(&mutex);
+        sem_post(&empty);
+        checar_primo(produto);
+        if(numero_produtos_consumidos == numero_max_produtos_consumidos)
+            std::terminate();
+    }
 }
 
 // -------------- Funções básicas --------------
 
-void inicializa_semaforos() 
+int main() 
 {
+    // Inicializa semáforos
     sem_init(&mutex, 0, 1);
     sem_init(&empty, 0, N);
     sem_init(&full, 0, 0);
-}
 
-void cria_produtores_consumidores() 
-{
-    unsigned num_produtores_criados, num_consumidores_criados = 0;
-	srand((unsigned) time(NULL));
-    while((num_produtores_criados < Np) && (num_consumidores_criados < Nc)) 
+    // Cria threads
+    std::vector<std::thread> vetor_consumidores;
+    std::vector<std::thread> vetor_produtores;
+    srand((unsigned) time(NULL));
+    while((vetor_produtores.size() < Np) && (vetor_consumidores.size() < Nc)) 
     {
         // Decide aleatoriamente se vai criar produor (0) ou consumidor (1)
         int zero_ou_um = rand() % 2;
-        if(num_produtores_criados == Np) zero_ou_um = 1;
-        if(num_consumidores_criados == Nc) zero_ou_um = 0;
+        if(vetor_produtores.size() == Np) zero_ou_um = 1;
+        if(vetor_consumidores.size() == Nc) zero_ou_um = 0;
 
-        if(zero_ou_um == 0) {
-            std::thread thread_produtor(tarefa_produtor);
-            num_produtores_criados++;
-        }
-        else {
-            std::thread thread_consumidor(tarefa_consumidor);
-            num_consumidores_criados++;
-        }
+        if(zero_ou_um == 0) 
+            vetor_produtores.push_back(std::thread(tarefa_produtor));
+        else
+            vetor_consumidores.push_back(std::thread(tarefa_consumidor));
     }
-}
 
-// Depois, coletar/exibir algumas informações
-void signal_handler(int) {
-    std::cout << "Terminou" << std::endl;
-}
+    // Espera threads terminarem
+    for(std::thread &thread_produtor : vetor_produtores) 
+        thread_produtor.join();
+    for(std::thread &thread_consumidor : vetor_consumidores) 
+        thread_consumidor.join();
 
-void espera_criterio_parada()
-{
-    // Sinalizado por um consumidor (o primeiro a consumir 10^5)
-    signal(SIGUSR1, signal_handler);
-    while(consumo_em_andamento)
-        pause();
-}
-
-int main() 
-{
-    inicializa_semaforos();
-    cria_produtores_consumidores();
-    espera_criterio_parada();
     return 0;
 }
-
-// Encerrar thread: std::terminate() dentro da thread
-// Disparar sinal local raise(SIGUSR1)
