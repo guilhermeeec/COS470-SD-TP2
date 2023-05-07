@@ -35,7 +35,7 @@
 
 // -------------- Variáveis globais --------------
 
-sem_t mutex, empty, full;
+sem_t mutex, empty, full, end;
 std::queue<uint32_t> buffer;
 uint32_t numero_produtos_consumidos = 0;
 uint32_t numero_produtos_produzidos = 0;
@@ -91,12 +91,13 @@ void tarefa_produtor(unsigned id)
             continua_producao = false;
         else {
             colocar_no_buffer(produto);
-            std::cout << "[PROD" << id << "] colocou " << produto << " (produto " << numero_produtos_produzidos << ") no buffer" << std::endl << std::flush;
+            //std::cout << "[PROD" << id << "] colocou " << produto << " (produto " << numero_produtos_produzidos << ") no buffer" << std::endl << std::flush;
         }
         sem_post(&mutex);
         sem_post(&full);
     }
-    std::cout << "[PROD" << id << "] fim" << std::endl << std::flush;
+    //std::cout << "[PROD" << id << "] fim" << std::endl << std::flush;
+    sem_post(&empty);
 }
 
 void tarefa_consumidor(unsigned id) 
@@ -114,7 +115,8 @@ void tarefa_consumidor(unsigned id)
         sem_post(&empty);
         if(continua_consumo) checar_primo(produto, id);
     }
-    std::cout << "[CONS" << id << "] fim" << std::endl << std::flush;
+    //std::cout << "[CONS" << id << "] fim" << std::endl << std::flush;
+    sem_post(&full);
 }
 
 // -------------- Funções básicas --------------
@@ -130,6 +132,7 @@ int main(int argc, char** argv)
     sem_init(&mutex, 0, 1);
     sem_init(&empty, 0, N);
     sem_init(&full, 0, 0);
+    sem_init(&end, 0, 1);
 
     std::cout << "[MAIN] Criando threads" << std::endl << std::flush;
     std::vector<std::thread> vetor_consumidores;
