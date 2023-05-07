@@ -9,10 +9,10 @@ double acumulador_compartilhado = 0;
 double acumulador_checagem = 0;
 SpinLock somador_lock;
 
-std::vector<int> gerar_numeros(double n) {
+std::vector<std::int8_t> gerar_numeros(double n) {
     std::mt19937 gerador(time(NULL)); // Gerador Mersenne Twister
-    std::uniform_int_distribution<int> dist(-100, 100); // Distribuição entre (-100, 100)
-    std::vector<int> numeros;
+    std::uniform_int_distribution<std::int8_t> dist(-100, 100); // Distribuição entre (-100, 100)
+    std::vector<std::int8_t> numeros;
 
     // Gerar n números aleatórios e adicionar ao vetor de números
     for(double idx = 0; idx < n; idx++) {
@@ -22,7 +22,7 @@ std::vector<int> gerar_numeros(double n) {
     return numeros;
 }
 
-void somar_parcela(std::vector<int> parcela) {
+void somar_parcela(std::vector<int8_t> parcela) {
     double temp = 0;
     
     // Faz a soma da parcela correspondente àquela thread
@@ -36,7 +36,7 @@ void somar_parcela(std::vector<int> parcela) {
 
 }
 
-void somar_checagem (std::vector<int> total) {
+void somar_checagem (std::vector<int8_t> total) {
     // Soma todos os valores para a checagem
     for (double idx = 0; idx < total.size(); idx++) {
         acumulador_checagem += total[idx];
@@ -48,7 +48,7 @@ int main() {
     std::vector<int> k_threads = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     for (int n = 0; n < n_numeros.size(); n++) {
-        std::vector<int> numeros = gerar_numeros(n_numeros[n]);
+        std::vector<std::int8_t> numeros = gerar_numeros(n_numeros[n]);
         std::cout << "Números Gerados: " << n_numeros[n] << std::endl;
         for (int k = 0; k < k_threads.size(); k++) {
             // Gerar o vetor de threads para as k threads
@@ -56,7 +56,7 @@ int main() {
             // Apontar para cada thread a parcela específica a ser somada
             for (int idx = 0; idx < k_threads[k]; idx++) {
                 threads[idx] = std::thread(somar_parcela,
-                                           std::vector<int>(numeros.begin() + idx*(n_numeros[n]/k_threads[k]),
+                                           std::vector<int8_t>(numeros.begin() + idx*(n_numeros[n]/k_threads[k]),
                                                             numeros.begin() + (idx+1)*(n_numeros[n]/k_threads[k])));
             }
             // Criar a thread para checagem
