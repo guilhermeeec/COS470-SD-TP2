@@ -49,10 +49,10 @@ void checar_primo(int numero, unsigned id) {
     }
     for (int idx = 2; idx <= numero/2; idx++)
         if (!(numero % idx)) {
-            std::cout << "[CONS" << id << "] " << numero << " nao eh primo" << std::endl << std::flush;
+            std::cout << "[CONS" << id << "] (produto " << numero_produtos_consumidos << ") " << numero << " nao eh primo" << std::endl << std::flush;
             return;
         }
-    std::cout << "[CONS" << id << "] " << numero << " eh primo" << std::endl << std::flush;
+    std::cout << "[CONS" << id << "] (produto " << numero_produtos_consumidos << ") " << numero << " eh primo" << std::endl << std::flush;
     return;
 }
 
@@ -108,7 +108,7 @@ void tarefa_consumidor(unsigned id)
 
 // -------------- Funções básicas --------------
 
-int main() 
+int main(int argc, char** argv) 
 {
     std::cout << "[MAIN] Tamanho do buffer: " << N << std::endl << std::flush;
     std::cout << "[MAIN] Inicializando semaforos" << std::endl << std::flush;
