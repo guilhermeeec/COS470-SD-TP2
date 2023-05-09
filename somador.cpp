@@ -13,7 +13,6 @@ double acumulador_checagem = 0;
 float tempo_total = 0;
 
 SpinLock somador_lock;
-SpinLock tempo_lock;
 
 std::vector<std::int8_t> gerar_numeros(double n)
 {
@@ -30,31 +29,28 @@ std::vector<std::int8_t> gerar_numeros(double n)
     return numeros;
 }
 
-void somar_parcela(std::vector<int8_t> parcela)
+void somar_parcela(std::vector<std::int8_t>& numeros, int min, int max)
 {
     double temp = 0;
     auto inicio = std::chrono::high_resolution_clock::now();
 
     // Faz a soma da parcela correspondente àquela thread
-    for (auto& num: parcela)
+    for (int idx = min; idx < max; idx++)
     {
-        temp += num;
+        temp += numeros[idx];
     }
     // Adquire controle da região crítica, adiciona ao acumulador e libera a região crítica
     somador_lock.acquire();
     acumulador_compartilhado += temp;
-    auto fim = std::chrono::high_resolution_clock::now();
+    tempo_total += (float) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - inicio).count();
     somador_lock.release();
-
-    tempo_lock.acquire();
-    tempo_total += std::chrono::duration<double, std::milli>(fim - inicio).count();
-    tempo_lock.release();
+    
 }
 
-void somar_checagem(std::vector<int8_t> total)
+void somar_checagem(std::vector<std::int8_t>& numeros)
 {
     // Soma todos os valores para a checagem
-    for (auto& num: total)
+    for (auto& num: numeros)
     {
         acumulador_checagem += num;
     }
@@ -77,12 +73,11 @@ int main()
             for (int i = 0; i < 10; i++) {
                 // Apontar para cada thread a parcela específica a ser somada
                 for (int idx = 0; idx < k; idx++) {
-                    threads[idx] = std::thread(somar_parcela,
-                                               std::vector<int8_t>(numeros.begin() + idx * (n / k),
-                                                                   numeros.begin() + (idx + 1) * (n / k)));
+                    threads[idx] = std::thread(somar_parcela, std::ref(numeros), idx * (n / k),
+                                                             (idx + 1) * (n / k));
                 }
                 // Criar a thread para checagem
-                threads[threads.size() - 1] = std::thread(somar_checagem, numeros);
+                threads[threads.size() - 1] = std::thread(somar_checagem, std::ref(numeros));
 
                 // Esperar que todas as threads terminem
                 for (auto& thread: threads) {
@@ -93,9 +88,6 @@ int main()
                     std::cout << "Valores somados inconsistentes com a checagem." << std::endl;
                     return 1;
                 }
-                //std::cout << "Soma Compartilhada: " << acumulador_compartilhado << std::endl;
-                //std::cout << "Soma para Checagem: " << acumulador_checagem << std::endl;
-
                 acumulador_compartilhado = 0;
                 acumulador_checagem = 0;
             }
