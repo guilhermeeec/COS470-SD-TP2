@@ -11,7 +11,7 @@ def compute_mean_and_interval(list):
     return statistics.mean(list), statistics.stdev(list)*1.96/(len(list)**0.5)
 
 def main():
-    f = open("prod_cons_result_2023-0507_16:40:17")
+    f = open("prod_cons_result_2023-0508_12:23:02")
     lines = f.readlines()
     for n_index in range(4):
         starting_line = (1 + 11 * 7) * n_index + 2

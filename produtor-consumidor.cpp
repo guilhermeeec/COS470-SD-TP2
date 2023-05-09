@@ -39,7 +39,7 @@ sem_t mutex, empty, full, end;
 std::queue<uint32_t> buffer;
 uint32_t numero_produtos_consumidos = 0;
 uint32_t numero_produtos_produzidos = 0;
-uint32_t numero_max_produtos = pow(10,1);
+uint32_t numero_max_produtos = pow(10,5);
 std::vector<uint32_t> ocupacao_buffer;
 
 // -------------- Funções dos produtores e consumidores --------------
