@@ -8,6 +8,9 @@
 #include <iomanip>
 #include "spinlock.h"
 
+#define PARCELA 0
+#define CHECK 1
+
 double acumulador_compartilhado = 0;
 double acumulador_checagem = 0;
 float tempo_total = 0;
@@ -32,19 +35,18 @@ std::vector<std::int8_t> gerar_numeros(double n)
 void somar_parcela(std::vector<std::int8_t>& numeros, int min, int max)
 {
     double temp = 0;
-    auto inicio = std::chrono::high_resolution_clock::now();
 
     // Faz a soma da parcela correspondente àquela thread
     for (int idx = min; idx < max; idx++)
     {
         temp += numeros[idx];
     }
+
     // Adquire controle da região crítica, adiciona ao acumulador e libera a região crítica
     somador_lock.acquire();
     acumulador_compartilhado += temp;
-    tempo_total += (float) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - inicio).count();
     somador_lock.release();
-    
+
 }
 
 void somar_checagem(std::vector<std::int8_t>& numeros)
@@ -54,6 +56,26 @@ void somar_checagem(std::vector<std::int8_t>& numeros)
     {
         acumulador_checagem += num;
     }
+}
+
+void gerar_threads(std::vector<std::int8_t>& numeros, double n, int k) {
+    std::vector<std::thread> threads(k);
+    auto inicio = std::chrono::high_resolution_clock::now();
+
+    // Apontar para cada thread a parcela específica a ser somada
+    for (int idx = 0; idx < k; idx++) {
+            threads[idx] = std::thread(somar_parcela, std::ref(numeros), idx * (n / k),
+                                                                        (idx + 1) * (n / k));
+    }
+
+    // Esperar que todas as threads terminem
+    for (auto& thread: threads) {
+        thread.join();
+    }
+
+    auto fim = std::chrono::high_resolution_clock::now();
+    auto dur = fim - inicio; 
+    tempo_total += std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
 }
 
 int main()
@@ -67,39 +89,33 @@ int main()
         std::vector<std::int8_t> numeros = gerar_numeros(n);
         std::cout << "Números Gerados: " << n << std::endl;
         for (auto& k: k_threads) {
-            // Gerar o vetor de threads para as k threads
-            std::vector<std::thread> threads(k + 1);
             std::cout << k << " Threads:" << std::endl;
             for (int i = 0; i < 10; i++) {
-                // Apontar para cada thread a parcela específica a ser somada
-                for (int idx = 0; idx < k; idx++) {
-                    threads[idx] = std::thread(somar_parcela, std::ref(numeros), idx * (n / k),
-                                                             (idx + 1) * (n / k));
-                }
-                // Criar a thread para checagem
-                threads[threads.size() - 1] = std::thread(somar_checagem, std::ref(numeros));
+                // Criar k threads para a soma
+                gerar_threads(std::ref(numeros), n, k);
 
-                // Esperar que todas as threads terminem
-                for (auto& thread: threads) {
-                    thread.join();
-                }
-                
+                // Criar a thread para checagem
+                std::thread check = std::thread(somar_checagem, std::ref(numeros));
+                check.join();
+
                 if (acumulador_compartilhado != acumulador_checagem) {
                     std::cout << "Valores somados inconsistentes com a checagem." << std::endl;
                     return 1;
                 }
+
                 acumulador_compartilhado = 0;
                 acumulador_checagem = 0;
             }
             int tempo_total_medio = round(tempo_total/10);
-
-            tempo_total = 0;
-            if (arquivo_saida.is_open()) {
-                arquivo_saida << tempo_total_medio << " ";
-            }
             std::cout << std::endl;
             std::cout << "Tempo Médio:" << tempo_total_medio << "ms" << std::endl;
             std::cout << std::endl;
+
+            if (arquivo_saida.is_open()) {
+                arquivo_saida << tempo_total_medio << " ";
+            }
+
+            tempo_total = 0;
         }
         arquivo_saida << "\n";
     }
