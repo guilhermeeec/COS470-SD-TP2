@@ -1,5 +1,4 @@
 CC = g++
-CC = g++
 CFLAGS = -Wall
 
 PROD_CONS_N=10
