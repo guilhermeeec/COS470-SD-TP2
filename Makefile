@@ -1,4 +1,5 @@
 CC = g++
+CC = g++
 CFLAGS = -Wall
 
 PROD_CONS_N=10
@@ -11,6 +12,7 @@ PROD_CONS_SRCS = produtor-consumidor.cpp
 
 all: timer prod_cons
 
+timer: $(TIMERS_SRCS:.cpp=.o)
 timer: $(TIMERS_SRCS:.cpp=.o)
 	$(CC) -o test_timer example_timer.o timer.o
 
