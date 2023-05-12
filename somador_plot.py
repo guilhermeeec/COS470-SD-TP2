@@ -16,7 +16,7 @@ def main():
 
     # Define os limites para os eixos x e y
     plt.xlim(1, 256)
-    plt.ylim(0, 5000)
+    plt.ylim(1, 10000)
 
     # Adiciona legendas e títulos ao gráfico
     plt.legend()
@@ -33,6 +33,7 @@ def main():
 
     # Define o eixo x como logarítmico na base 2
     plt.xscale('log', base=2)
+    plt.yscale('log', base=10)
 
     # Exibe o gráfico
     plt.savefig('grafico.png', dpi=300, bbox_inches='tight')

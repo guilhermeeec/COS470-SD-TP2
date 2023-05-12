@@ -1,3 +1,5 @@
+// -------------- Bibliotecas --------------
+
 #include <vector>
 #include <random>
 #include <ctime>
@@ -8,8 +10,8 @@
 #include <iomanip>
 #include "spinlock.h"
 
-#define PARCELA 0
-#define CHECK 1
+
+// -------------- Variáveis globais --------------
 
 double acumulador_compartilhado = 0;
 double acumulador_checagem = 0;
@@ -78,47 +80,30 @@ void gerar_threads(std::vector<std::int8_t>& numeros, double n, int k) {
     tempo_total += std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    std::vector<double> n_numeros = {10000000, 100000000, 1000000000};
-    std::vector<int> k_threads = {1, 2, 4, 8, 16, 32, 64, 128, 256};
+    double N;
+    int K;
+    
+    N = std::stod(argv[1]);
+    K = std::stoi(argv[2]);
 
-    std::ofstream arquivo_saida("medias.txt");
+    std::vector<std::int8_t> numeros = gerar_numeros(N);
+    for (int idx = 0; idx < 10; idx++) {
+        // Criar k threads para a soma
+        gerar_threads(std::ref(numeros), N, K);
 
-    for (auto& n: n_numeros) {
-        std::vector<std::int8_t> numeros = gerar_numeros(n);
-        std::cout << "Números Gerados: " << n << std::endl;
-        for (auto& k: k_threads) {
-            std::cout << k << " Threads:" << std::endl;
-            for (int i = 0; i < 10; i++) {
-                // Criar k threads para a soma
-                gerar_threads(std::ref(numeros), n, k);
+        // Criar a thread para checagem
+        std::thread check = std::thread(somar_checagem, std::ref(numeros));
+        check.join();
 
-                // Criar a thread para checagem
-                std::thread check = std::thread(somar_checagem, std::ref(numeros));
-                check.join();
-
-                if (acumulador_compartilhado != acumulador_checagem) {
-                    std::cout << "Valores somados inconsistentes com a checagem." << std::endl;
-                    return 1;
-                }
-
-                acumulador_compartilhado = 0;
-                acumulador_checagem = 0;
-            }
-            int tempo_total_medio = round(tempo_total/10);
-            std::cout << std::endl;
-            std::cout << "Tempo Médio:" << tempo_total_medio << "ms" << std::endl;
-            std::cout << std::endl;
-
-            if (arquivo_saida.is_open()) {
-                arquivo_saida << tempo_total_medio << " ";
-            }
-
-            tempo_total = 0;
+        if (acumulador_compartilhado != acumulador_checagem) {
+            std::cout << "Valores somados inconsistentes com a checagem." << std::endl;
+            return 1;
         }
-        arquivo_saida << "\n";
+
     }
-    arquivo_saida.close();
+    std::cout << tempo_total << std::endl;
+    
     return 0;
 }
