@@ -5,7 +5,7 @@ for N in 10000000 100000000 1000000000; do
         TEMPO=$(./somador $N $K)
         MEDIA=$((TEMPO/10))
         echo "Numeros Gerados: $N Numero de Threads:$K Media: $MEDIA"
-        echo -n "$MEDIA " >> medias2.txt
+        echo -n "$MEDIA " >> medias.txt
     done
-    echo "" >> medias2.txt
+    echo "" >> medias.txt
 done
